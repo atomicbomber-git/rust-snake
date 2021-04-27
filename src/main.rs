@@ -11,8 +11,7 @@ const WINDOW_TITLE: &str = "Rust Snake";
 const WINDOW_WIDTH_PIXELS: f64 = 640.0;
 const WINDOW_HEIGHT_PIXELS: f64 = 480.0;
 
-const TILE_SIZE: f64 = 10.0;
-
+const TILE_SIZE: f64 = 20.0;
 const ROW_COUNT: usize = WINDOW_HEIGHT_PIXELS as usize / TILE_SIZE as usize;
 const COL_COUNT: usize = WINDOW_WIDTH_PIXELS as usize / TILE_SIZE as usize;
 
@@ -24,7 +23,7 @@ const COLOR_EMPTY: Color = COLOR_WHITE;
 const COLOR_FOOD: Color = COLOR_GREEN;
 const COLOR_SNAKE: Color = COLOR_RED;
 
-const FRAME_PER_SECONDS: u128 = 60;
+const FRAME_PER_SECONDS: u128 = 30;
 const MILLIS_PER_FRAME: u128 = (1000.0 / FRAME_PER_SECONDS as f64) as u128;
 
 #[derive(Debug)]
@@ -36,7 +35,7 @@ enum MovementDirection {
 }
 
 #[derive(Debug)]
-struct World<const ROW_COUNT: usize, const COL_COUNT: usize> {
+struct World {
     pub is_running: bool,
     pub row_count: usize,
     pub col_count: usize,
@@ -45,12 +44,12 @@ struct World<const ROW_COUNT: usize, const COL_COUNT: usize> {
     pub snake_body: Vec<[usize; 2]>,
 }
 
-impl<const ROW_COUNT: usize, const COL_COUNT: usize> World<ROW_COUNT, COL_COUNT> {
-    pub fn new() -> World<ROW_COUNT, COL_COUNT> {
+impl World {
+    pub fn new(rows: usize, cols: usize) -> World {
         let mut world = World {
             is_running: true,
-            row_count: ROW_COUNT,
-            col_count: COL_COUNT,
+            row_count: rows,
+            col_count: cols,
             rng: thread_rng(),
             movement_direction: MovementDirection::Up,
             snake_body: Vec::new(),
@@ -108,7 +107,7 @@ fn main() {
             .build()
             .unwrap();
 
-    let mut world: World<ROW_COUNT, COL_COUNT> = World::new();
+    let mut world: World = World::new(20, 20);
 
     // MAIN LOOP
     let mut previous_update = UNIX_EPOCH;
@@ -144,17 +143,21 @@ fn main() {
         let tile_rect = Rectangle::new(COLOR_EMPTY);
         let tile_border_rect = Rectangle::new_border(COLOR_GREEN, 0.25);
 
+
         window.draw_2d(&event, |context, graphics, _device| {
             // CLEAR SCREEN
-            clear([200.0, 120.0, 200.0, 0.5], graphics);
+            clear(COLOR_EMPTY, graphics);
 
             for i_row in 0..world.row_count {
                 for i_col in 0..world.col_count {
-                    let rectangle_def = [
+                    let start_coords = [
                         i_col as f64 * TILE_SIZE,
                         i_row as f64 * TILE_SIZE,
+                    ];
+
+                    let finish_coords = [
                         (i_col + 1) as f64 * TILE_SIZE,
-                        (i_row + 1) as f64 * TILE_SIZE
+                        (i_row + 1) as f64 * TILE_SIZE,
                     ];
 
                     let mut color = COLOR_EMPTY;
@@ -163,20 +166,22 @@ fn main() {
                     }
 
                     tile_rect.color(color)
-                        .draw(rectangle_def,
+                        .draw_from_to(
+                            start_coords,
+                            finish_coords,
                               &context.draw_state,
                               context.transform,
                               graphics,
                         );
 
                     tile_border_rect
-                        .draw(
-                            rectangle_def,
+                        .draw_from_to(
+                            start_coords,
+                            finish_coords,
                             &context.draw_state,
                             context.transform,
                             graphics,
                         )
-
                 }
             }
         });
