@@ -108,6 +108,9 @@ fn main() {
             .unwrap();
 
     let mut world: World = World::new(20, 20);
+    let mut food_pos: [usize; 2] = [0, 0];
+    food_pos[0] = world.rng.gen_range(0..world.row_count);
+    food_pos[1] = world.rng.gen_range(0..world.col_count);
 
     // MAIN LOOP
     let mut previous_update = UNIX_EPOCH;
@@ -141,8 +144,33 @@ fn main() {
         }
 
         let tile_rect = Rectangle::new(COLOR_EMPTY);
-        let tile_border_rect = Rectangle::new_border(COLOR_GREEN, 0.25);
+        let tile_border_rect = Rectangle::new_border(COLOR_GREEN, 1.0);
+        
+        // Check if the snake has eaten the food
+        // by comparing the last element of the snake's body with the food's position
+        // If so, add a new tile to the snake
+        // and generate a new food position
 
+        if world.snake_body.last().unwrap() == &food_pos {
+            // Add a new tile to the snake
+            // on the tail of the snake
+            // and generate a new food position
+            // that is not on the snake's body
+
+            // New tail at the end of the snake plus one
+            let new_tail = world.snake_body.last().unwrap().clone();
+            world.snake_body.push(new_tail);
+            food_pos[0] = world.rng.gen_range(0..world.row_count);
+            food_pos[1] = world.rng.gen_range(0..world.col_count);
+            // Check if the new food position is on the snake's body
+            // If so, generate a new food position
+            // until it is not on the snake's body
+            while world.snake_body.contains(&food_pos) {
+                food_pos[0] = world.rng.gen_range(0..world.row_count);
+                food_pos[1] = world.rng.gen_range(0..world.col_count);
+            }
+        }
+        
 
         window.draw_2d(&event, |context, graphics, _device| {
             // CLEAR SCREEN
@@ -164,6 +192,9 @@ fn main() {
                     if world.snake_body.contains(&[i_row, i_col]) {
                         color = COLOR_SNAKE;
                     }
+                    if food_pos == [i_row, i_col] {
+                        color = COLOR_FOOD;
+                    }
 
                     tile_rect.color(color)
                         .draw_from_to(
@@ -181,7 +212,7 @@ fn main() {
                             &context.draw_state,
                             context.transform,
                             graphics,
-                        )
+                        );
                 }
             }
         });
